@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:jersey="http://www.mulesoft.org/schema/mule/jersey" xmlns:http="http://www.mulesoft.org/schema/mule/http"  xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:context="http://www.springframework.org/schema/context" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/jersey http://www.mulesoft.org/schema/mule/jersey/current/mule-jersey.xsd">
+    
+    <mongo:config database="${database.name}" doc:name="Mongo DB" name="Mongo_DB" password="${database.password}" username="${database.user}">
+        <mongo:connection-pooling-profile exhaustedAction="WHEN_EXHAUSTED_GROW" initialisationPolicy="INITIALISE_ONE"/>
+    </mongo:config>
+    
+    <http:listener-config name="HTTP_Listener_Configuration" host="localhost" port="${http.port}" doc:name="HTTP Listener Configuration"/>
+    
+    <flow  name="csv-to-mongodbFlow1">
+    	<file:inbound-endpoint doc:name="Poll files" metadata:id="d465231a-3a94-4460-acce-174c73019323" path="src/main/resources/input" responseTimeout="10000"/>
+        <dw:transform-message doc:name="CSV to Map" metadata:id="f7d8c6e6-a84d-464c-b438-ee911aded909">
+            <dw:input-payload doc:sample="list_csv_1.csv"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload map
+{
+	productcode: $.PRODUCTCODE,
+	descr: $.PRODUCT,
+	short: $.SHORTDESCRIPTION,
+	quantity: $.QUANTITY,
+	brand: $.BRAND,
+	manufacturer: $.MANUFACTURER,
+	category: $.CATEGORY,
+	price: $.RRP	
+}]]></dw:set-payload>
+        </dw:transform-message>
+
+        <logger doc:name="Log objects to save" level="INFO" message="saving objects: #[payload]"/>
+        <enricher doc:name="Message Enricher" source="#[payload]" target="#[flowVars['existsCollection']]">
+            <mongo:exists-collection collection="products" config-ref="Mongo_DB" doc:name="Test if a collection exists"/>
+        </enricher>
+        <choice doc:name="Choice">
+            <when expression="!flowVars['existsCollection']">
+                <mongo:create-collection collection="products" config-ref="Mongo_DB" doc:name="Create collection"/>
+            </when>
+            <otherwise>
+                <logger doc:name="Log that a collection exists" level="INFO" message="Customer Collection already exists."/>
+            </otherwise>
+        </choice>
+        <foreach doc:name="For Each">
+            <mongo:save-object-from-map collection="products" config-ref="Mongo_DB" doc:name="Save products to Mongo DB">
+                <mongo:element-attributes ref="#[payload]"/>
+            </mongo:save-object-from-map>
+        </foreach>
+    </flow>
+    
+    <flow name="restful-service-flow" >
+	    <http:listener config-ref="HTTP_Listener_Configuration" path="/*" doc:name="HTTP"/>
+	     <jersey:resources doc:name="REST">
+	         <component class="com.healthierprices.poc.RestfulServiceResource"/>
+	     </jersey:resources>
+    
+    </flow>
+</mule>
