@@ -1,4 +1,4 @@
-package com.healthierprices.poc;
+package com.healthierprices.data;
 
 import java.net.UnknownHostException;
 import java.util.Collection;
@@ -32,7 +32,6 @@ public class MongoDAO {
 			db = mongoClient.getDB(DB_NAME);
 			
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
