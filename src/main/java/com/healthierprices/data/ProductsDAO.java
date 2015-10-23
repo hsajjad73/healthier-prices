@@ -10,33 +10,38 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 
-public class MongoDAO {
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+public class ProductsDAO {
 	
-	private static String DB_NAME = "healthierprices";
-	private static String PRODUCTS_COLL = "products";
 	private static int MAX_FETCH = 1000;
 	
-	private static DB db;
+	private static final Logger logger = LogManager.getLogger(ProductsDAO.class);
 	
-	static
+	private static String PRODUCTS_COLL = "products";
+	
+	private DB db = null;
+	
+	public ProductsDAO(String host, int port, String dbName)
 	{
 		MongoClient mongoClient = null;
 		try {
-			mongoClient = new MongoClient( "localhost" , 27017 );
+			mongoClient = new MongoClient(host, port);
 
 			//	// or, to connect to a replica set, with auto-discovery of the primary, supply a seed list of members
 			//	MongoClient mongoClient = new MongoClient(Arrays.asList(new ServerAddress("localhost", 27017),
 			//	                                      new ServerAddress("localhost", 27018),
 			//	                                      new ServerAddress("localhost", 27019)));
 			
-			db = mongoClient.getDB(DB_NAME);
-			
+			db = mongoClient.getDB(dbName);
+			logger.debug("DB connection established successfully!");
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public static Collection<DBObject> getAllProducts() {
+	public Collection<DBObject> getAllProducts() {
 		Collection<DBObject> coll = new LinkedList<DBObject>();
 		DBCursor cursor = db.getCollection(PRODUCTS_COLL).find().limit(MAX_FETCH);
 		try {
@@ -46,14 +51,15 @@ public class MongoDAO {
 		} finally {
 		   cursor.close();
 		}
+		logger.debug(String.format("Products retrieved [result size: %s]",coll.size()));
 		return coll;
 	}
 	
-	public static long getProductsCount() {
+	public long getProductsCount() {
 		return db.getCollection(PRODUCTS_COLL).find().count();
 	}	
 	
-	public static Collection<DBObject> getProductById(String id) {
+	public Collection<DBObject> getProductById(String id) {
 		BasicDBObject query = new BasicDBObject("productcode", id);
 		Collection<DBObject> coll = new LinkedList<DBObject>();
 		DBCursor cursor = db.getCollection(PRODUCTS_COLL).find(query);
@@ -64,10 +70,11 @@ public class MongoDAO {
 		} finally {
 		   cursor.close();
 		}
+		logger.debug(String.format("[%s] product(s) retrieved by [id: '%s']",coll.size(), id));
 		return coll;
 	}
 
-	public static Collection<DBObject> getProductsByCategory(String categoryId) {
+	public Collection<DBObject> getProductsByCategory(String categoryId) {
 		BasicDBObject query = new BasicDBObject("category", categoryId);
 		Collection<DBObject> coll = new LinkedList<DBObject>();
 		DBCursor cursor = db.getCollection(PRODUCTS_COLL).find(query);
@@ -78,6 +85,7 @@ public class MongoDAO {
 		} finally {
 		   cursor.close();
 		}
+		logger.debug(String.format("[%s] product(s) retrieved for [category: '%s']",coll.size(), categoryId));
 		return coll;
 	}
 }
