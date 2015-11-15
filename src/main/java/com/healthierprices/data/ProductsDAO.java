@@ -3,6 +3,7 @@ package com.healthierprices.data;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Map;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
@@ -19,7 +20,7 @@ public class ProductsDAO {
 	
 	private static final Logger logger = LogManager.getLogger(ProductsDAO.class);
 	
-	private static String PRODUCTS_COLL = "products";
+	private static String PRODUCTS_COLL = "pharm_prods";
 	
 	private DB db = null;
 	
@@ -28,17 +29,24 @@ public class ProductsDAO {
 		MongoClient mongoClient = null;
 		try {
 			mongoClient = new MongoClient(host, port);
-
-			//	// or, to connect to a replica set, with auto-discovery of the primary, supply a seed list of members
-			//	MongoClient mongoClient = new MongoClient(Arrays.asList(new ServerAddress("localhost", 27017),
-			//	                                      new ServerAddress("localhost", 27018),
-			//	                                      new ServerAddress("localhost", 27019)));
-			
 			db = mongoClient.getDB(dbName);
 			logger.debug("DB connection established successfully!");
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
+	}
+	
+
+	public Object insertProduct(Map map) {
+		BasicDBObject doc = new BasicDBObject("pharma_id", map.get("pharma_id"))
+        .append("prod_id", map.get("prod_id"))
+        .append("name", map.get("name"))
+        .append("size", map.get("size"))
+        .append("rrp", map.get("rrp"))
+        .append("price", map.get("price"));
+		db.getCollection(PRODUCTS_COLL).insert(doc);
+		logger.debug(doc + "inserted");
+		return map;
 	}
 	
 	public Collection<DBObject> getAllProducts() {
@@ -60,7 +68,7 @@ public class ProductsDAO {
 	}	
 	
 	public Collection<DBObject> getProductById(String id) {
-		BasicDBObject query = new BasicDBObject("productcode", id);
+		BasicDBObject query = new BasicDBObject("prod_id", id);
 		Collection<DBObject> coll = new LinkedList<DBObject>();
 		DBCursor cursor = db.getCollection(PRODUCTS_COLL).find(query);
 		try {
@@ -74,18 +82,4 @@ public class ProductsDAO {
 		return coll;
 	}
 
-	public Collection<DBObject> getProductsByCategory(String categoryId) {
-		BasicDBObject query = new BasicDBObject("category", categoryId);
-		Collection<DBObject> coll = new LinkedList<DBObject>();
-		DBCursor cursor = db.getCollection(PRODUCTS_COLL).find(query);
-		try {
-		   while(cursor.hasNext()) {
-		       coll.add(cursor.next());
-		   }
-		} finally {
-		   cursor.close();
-		}
-		logger.debug(String.format("[%s] product(s) retrieved for [category: '%s']",coll.size(), categoryId));
-		return coll;
-	}
 }

@@ -1,13 +1,16 @@
 package com.healthierprices.rest;
 
 import java.util.Collection;
+import java.util.Map;
 
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import com.healthierprices.data.ProductsDAO;
 
@@ -19,12 +22,16 @@ public class RestfulServiceResource {
     @GET
     @Path("/products")
     @Produces(MediaType.APPLICATION_JSON)
-    public Collection<?> products(@QueryParam("category") String catId) {
-    	if(catId != null) {
-    		return dao.getProductsByCategory(catId);
-    	}else {
-    		return dao.getAllProducts();
-    	}
+    public Collection<?> products() {
+    	return dao.getAllProducts();
+    }
+
+    @POST
+    @Path("/products")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response updateProduct(Map o) {
+    	Object result = dao.insertProduct(o);
+    	return Response.status(201).entity(result).build();
     }
     
     @GET
