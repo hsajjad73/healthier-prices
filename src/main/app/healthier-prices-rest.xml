@@ -14,6 +14,7 @@ http://www.mulesoft.org/schema/mule/jersey http://www.mulesoft.org/schema/mule/j
     
     <flow name="restful-service-flow" >
 	    <http:listener config-ref="HTTP_Listener_Configuration" path="/*" doc:name="HTTP"/>
+		<set-property propertyName="Access-Control-Allow-Origin" value="*" />
 	     <jersey:resources doc:name="REST">
 	         <component doc:description="REST service">
 	         	<spring-object bean="restService"/>

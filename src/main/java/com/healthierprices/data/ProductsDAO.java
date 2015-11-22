@@ -70,7 +70,7 @@ public class ProductsDAO {
 	public Collection<DBObject> getProductById(String id) {
 		BasicDBObject query = new BasicDBObject("prod_id", id);
 		Collection<DBObject> coll = new LinkedList<DBObject>();
-		DBCursor cursor = db.getCollection(PRODUCTS_COLL).find(query);
+		DBCursor cursor = db.getCollection(PRODUCTS_COLL).find(query).sort(new BasicDBObject("price", 1));
 		try {
 		   while(cursor.hasNext()) {
 		       coll.add(cursor.next());
