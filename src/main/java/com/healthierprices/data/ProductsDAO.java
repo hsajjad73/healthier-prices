@@ -5,14 +5,14 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 
 public class ProductsDAO {
 	
@@ -38,12 +38,16 @@ public class ProductsDAO {
 	
 
 	public Object insertProduct(Map map) {
-		BasicDBObject doc = new BasicDBObject("pharma_id", map.get("pharma_id"))
+		BasicDBObject doc = new BasicDBObject("pharmacy", 
+				new BasicDBObject( "id", ((Map)map.get("pharmacy")).get("id"))
+					.append("name", ((Map)map.get("pharmacy")).get("name")))
         .append("prod_id", map.get("prod_id"))
         .append("name", map.get("name"))
         .append("size", map.get("size"))
         .append("rrp", map.get("rrp"))
-        .append("price", map.get("price"));
+        .append("price", map.get("price"))
+		.append("img_lg", map.get("img_lg"))
+		.append("ex_link", map.get("ex_link"));
 		db.getCollection(PRODUCTS_COLL).insert(doc);
 		logger.debug(doc + "inserted");
 		return map;
